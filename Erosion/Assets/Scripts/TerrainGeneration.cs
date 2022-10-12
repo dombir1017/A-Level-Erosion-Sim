@@ -7,11 +7,16 @@ using UnityEngine;
 public class TerrainGeneration : MonoBehaviour
 {
     public int width, height;
-    [Range(0, 50)]
-    public int amplitude;
+    [Range(0.1f, 100f)]
+    public float terrainHeight;
     [Range(0.1f, 100f)]
     public float scale;
+    [Range(1f, 10f)]
+    public float lacunarity; //Each octave's frequency multiplied by lacunarity
+    [Range(0.001f, 0.1f)]
+    public float persistance; //Each octave's amplitude multiplied by persistance
     public int octaves;
+    public Gradient gr;
 
     private Mesh mesh;
     void OnRenderObject()
@@ -46,14 +51,36 @@ public class TerrainGeneration : MonoBehaviour
             }
         }
         mesh.triangles = tris;
+
+        Color[] colours = new Color[verts.Length];
+        for (int i = 0, y = 0; y <= height; y++)
+        {
+            for (int x = 0; x <= width; x++, i++)
+            {
+                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, verts[i].y);
+                colours[i] = gr.Evaluate(vertHeight);
+            }
+        }
+        mesh.colors = colours;
+
+        mesh.RecalculateNormals();
     }
 
     float Noise(int x, int y)
     {
         float val = 0;
-        for(int i = 1; i < octaves; i++)
+        float amplitude = 1;
+        float frequency = 1;
+
+        for (int i = 1; i < octaves; i++)
         {
-            val += Mathf.PerlinNoise(x / (scale*i), y / (scale*i)) * amplitude/i;
+            float scaledX = x / scale * frequency;
+            float scaledY = y / scale * frequency;
+
+            float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
+            val += noiseValue * amplitude * terrainHeight;
+            frequency *= lacunarity;
+            amplitude *= persistance;
         }
 
         return val;
