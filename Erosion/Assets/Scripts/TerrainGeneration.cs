@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,10 @@ public class TerrainGeneration : MonoBehaviour
     public float persistance; //Each octave's amplitude multiplied by persistance
     public int octaves;
     public Gradient gr;
+    public AnimationCurve curve;
+    [Range(1f, 200f)]
+    public int radius;
+    public int seed;
 
     private Mesh mesh;
     void OnRenderObject()
@@ -34,7 +39,8 @@ public class TerrainGeneration : MonoBehaviour
         {
             for (int x = 0; x <= width; x++, i++)
             {
-                verts[i] = new Vector3(x, Noise(x, y), y);
+                float height = Noise(x, y);
+                verts[i] = new Vector3(x, height, y);
             }
         }
         mesh.vertices = verts;
@@ -74,11 +80,12 @@ public class TerrainGeneration : MonoBehaviour
 
         for (int i = 1; i < octaves; i++)
         {
-            float scaledX = x / scale * frequency;
-            float scaledY = y / scale * frequency;
+            float relativeDistance = 1 - Vector2.Distance(new Vector2(x-width*0.5f, y-height*0.5f), Vector2.zero)/radius;
+            float scaledX = (x+seed) / scale * frequency;
+            float scaledY = (y+seed) / scale * frequency;
 
             float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
-            val += noiseValue * amplitude * terrainHeight;
+            val += noiseValue * amplitude * terrainHeight * curve.Evaluate(relativeDistance*noiseValue);
             frequency *= lacunarity;
             amplitude *= persistance;
         }
