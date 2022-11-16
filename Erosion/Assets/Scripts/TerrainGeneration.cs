@@ -3,33 +3,34 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-[ExecuteInEditMode]
 public class TerrainGeneration : MonoBehaviour
 {
-    public int width, height;
-    [Range(0.1f, 100f)]
-    public float terrainHeight;
-    [Range(0.1f, 100f)]
-    public float scale;
-    [Range(1f, 10f)]
-    public float lacunarity; //Each octave's frequency multiplied by lacunarity
-    [Range(0.001f, 0.1f)]
-    public float persistance; //Each octave's amplitude multiplied by persistance
-    public int octaves;
-    public Gradient gr;
-    public AnimationCurve curve;
-    [Range(1f, 200f)]
-    public int radius;
-    public int seed;
+    const int width = 100, height = 100, radius = 50, octaves = 5;
+    const float persistance = 0.35f, lacunarity = 3f; //Each octave's frequency multiplied by lacunarity
+                                                      //Each octave's amplitude multiplied by persistance
+    private float terrainHeight;
+    private float scale;
+    private int offset;
 
-    private Mesh mesh;
-    void OnRenderObject()
+    public float[] values
     {
-        GenerateTerrain();
+        set { terrainHeight = value[0]; scale = value[1]; offset = Convert.ToInt16(value[2]); }
     }
 
-    void GenerateTerrain()
+    public Gradient gr;
+    public AnimationCurve curve;
+    private Mesh mesh;
+
+    public void randomiseValues()
+    {
+        terrainHeight = Random.Range(10f, 32f);
+        scale = Random.Range(10f, 50f);
+        offset = Random.Range(0, 1000);
+    }
+
+    public void GenerateTerrain()
     {
         this.GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "terrain mesh";
@@ -81,8 +82,8 @@ public class TerrainGeneration : MonoBehaviour
         for (int i = 1; i < octaves; i++)
         {
             float relativeDistance = 1 - Vector2.Distance(new Vector2(x-width*0.5f, y-height*0.5f), Vector2.zero)/radius;
-            float scaledX = (x+seed) / scale * frequency;
-            float scaledY = (y+seed) / scale * frequency;
+            float scaledX = (x+offset) / scale * frequency;
+            float scaledY = (y+offset) / scale * frequency;
 
             float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
             val += noiseValue * amplitude * terrainHeight * curve.Evaluate(relativeDistance*noiseValue);
