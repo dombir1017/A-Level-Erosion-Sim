@@ -14,7 +14,6 @@ public class MenuManager : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log(Application.persistentDataPath);
         string[] files = Directory.GetFiles(Application.persistentDataPath, "*.*", SearchOption.TopDirectoryOnly);
         var result = files.Select(a => Path.GetFileName(a));
         dropdown.ClearOptions();
