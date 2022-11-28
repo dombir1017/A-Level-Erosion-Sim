@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -3688,6 +3688,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 558c1267a33f0394ba68a29f4f66d5b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  verts: []
   gr:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -3820,9 +3821,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 0}
-  dropletAttempts: 1
+  dropletAttempts: 5
   length: 0
-  startVelocity: 0
+  velocity: 0
   mass: 0
   removal: 0
 --- !u!1 &1176448119

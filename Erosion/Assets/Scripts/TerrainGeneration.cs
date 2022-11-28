@@ -14,6 +14,8 @@ public class TerrainGeneration : MonoBehaviour
     private float scale;
     private int offset;
 
+    public Vector3[] verts;
+
     public float[] values
     {
         get { return new float[] {terrainHeight, scale, offset}; }
@@ -37,7 +39,8 @@ public class TerrainGeneration : MonoBehaviour
         this.GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "terrain mesh";
 
-        Vector3[] verts = new Vector3[(length + 1) * (length + 1)];
+        verts = new Vector3[(length + 1) * (length + 1)];
+
         for (int i = 0, y = 0; y <= length; y++)
         {
             for (int x = 0; x <= length; x++, i++)

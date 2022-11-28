@@ -9,11 +9,16 @@ public class Erosion : MonoBehaviour
 {
     public Mesh mesh;
     public int dropletAttempts, length;
-    public float startVelocity = 0, mass, removal;
+    public float velocity = 0, mass, removal;
     private TerrainGeneration tg;
 
 
     List<Int32> points;
+
+    private void Start()
+    {
+        tg = GetComponent<TerrainGeneration>();
+    }
 
     void OnDrawGizmosSelected()
     {
@@ -34,7 +39,7 @@ public class Erosion : MonoBehaviour
             if(mesh.vertices[x + (length + 1) * z].y >= 0)
             {
                 points.Add(x + (length + 1) * z);
-                RunDroplet(points[0]);
+                RunDroplet(points[points.Count-1]);
             }
         }
         
@@ -68,7 +73,8 @@ public class Erosion : MonoBehaviour
         if (mesh.vertices[newPosition].y > 0 && newPosition != prevPoint)
         {
             points.Add(newPosition);
-            mesh.vertices[point].y -= 1f;
+            tg.verts[point].y -= 1f;
+            mesh.vertices = tg.verts;
             RunDroplet(newPosition, point);
         }
         else
