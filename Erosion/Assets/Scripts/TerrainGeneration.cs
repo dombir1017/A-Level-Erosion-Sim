@@ -78,7 +78,6 @@ public class TerrainGeneration : MonoBehaviour
         mesh.RecalculateNormals();
         er.mesh = mesh;
         er.length = length;
-        er.StartErosion();
     }
 
     float Noise(int x, int y)

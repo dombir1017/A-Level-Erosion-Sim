@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using TMPro;
@@ -9,11 +8,12 @@ using UnityEngine.UI;
 
 public class MenuManager : MonoBehaviour
 {
-    public Button quitButton, randomButton, loadButton, returnButton, regenerateButton, saveButton;
+    public Button quitButton, randomButton, loadButton, returnButton, regenerateButton, saveButton, startButton;
     public Dropdown dropdown;
     public TMP_InputField heightField, scaleField, offsetField, saveField;
-    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists;
+    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress;
     public TerrainGeneration tg;
+    public Erosion er;
     private int currentMenu = 0;
 
     private void Start()
@@ -25,6 +25,14 @@ public class MenuManager : MonoBehaviour
         loadButton.onClick.AddListener(LoadTerrain);
         regenerateButton.onClick.AddListener(Regenerate);
         saveButton.onClick.AddListener(SaveTerrain);
+        startButton.onClick.AddListener(StartErosion);
+    }
+
+    private void StartErosion()
+    {
+        progress.text = String.Join("/", "0", er.dropletAttempts);
+        progress.gameObject.SetActive(true);
+        StartCoroutine(er.StartErosion());
     }
 
     private void refreshFiles()

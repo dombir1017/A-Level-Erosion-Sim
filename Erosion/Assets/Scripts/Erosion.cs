@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -9,49 +10,42 @@ public class Erosion : MonoBehaviour
 {
     public Mesh mesh;
     public int dropletAttempts, length;
-    public float velocity = 0, mass, removal;
+    public float velocity = 3, mass, removal, carryAmount, depositionAngle;
     private TerrainGeneration tg;
-
-
-    List<Int32> points;
+    private List<Int32> points;
+    public MenuManager menuManager;
 
     private void Start()
     {
         tg = GetComponent<TerrainGeneration>();
     }
 
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.blue;
-        for(int i = 0; i < points.Count; i ++)
-        {
-            Gizmos.DrawSphere(mesh.vertices[points[i]], 0.05f);
-        }
-    }
 
-    public void StartErosion()
+    public IEnumerator StartErosion()
     {
         points = new List<Int32>();
         for (int i = 0; i < dropletAttempts; i++)
         {
-            int x = Random.Range(30, 70);
-            int z = Random.Range(30, 70);
-            if(mesh.vertices[x + (length + 1) * z].y >= 0)
+            int x = Random.Range(15, 85);
+            int z = Random.Range(15, 85);
+            if (mesh.vertices[x + (length + 1) * z].y >= 0)
             {
                 points.Add(x + (length + 1) * z);
-                RunDroplet(points[points.Count-1]);
+                RunDroplet(points[points.Count - 1]);
             }
+            menuManager.progress.text = string.Join("/", i + 1, dropletAttempts);
+            yield return new WaitForFixedUpdate();
         }
-        
     }
 
-    private void RunDroplet(int point, int prevPoint = 0)
+    private void RunDroplet(int point, int prevPoint = 0, float sediment = 0f)
     {
         Vector3 normalToPoint = calculateNormal(point);
-        Vector2 normalDirection = (new Vector2(normalToPoint.x, normalToPoint.z)).normalized;
+        Vector2 normalDirection = new Vector2(normalToPoint.x, normalToPoint.z).normalized;
         int newPosition = 0;
         float angle = Vector2.SignedAngle(normalDirection, Vector2.up);
         int direction = Mathf.RoundToInt(angle / 45f);
+
         switch (Math.Abs(direction))
         {
             case 0:
@@ -70,17 +64,32 @@ public class Erosion : MonoBehaviour
                 newPosition = point - length - 1;
                 break;
         }
+        float gradient = Vector2.Angle(Vector2.up, new Vector2(normalToPoint.x, normalToPoint.y));
+        float removedMaterial = gradient/90; //Can never have overhang so will always be between 0 and 1
+        float depositedMaterial = sediment * (1-removedMaterial);
+        float newSediment = sediment + removedMaterial;
+        
+        tg.verts[point].y -= removedMaterial;
+
+        if (gradient < depositionAngle)
+        {
+            tg.verts[point].y += depositedMaterial;
+            newSediment -= depositedMaterial;
+        }
+
+
         if (mesh.vertices[newPosition].y > 0 && newPosition != prevPoint)
         {
             points.Add(newPosition);
-            tg.verts[point].y -= 1f;
-            mesh.vertices = tg.verts;
-            RunDroplet(newPosition, point);
+            RunDroplet(newPosition, point, newSediment);
         }
         else
         {
+            tg.verts[point].y += sediment;
             mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
         }
+        mesh.vertices = tg.verts;
     }
 
     public Vector3 calculateNormal(int vertexNumber)
