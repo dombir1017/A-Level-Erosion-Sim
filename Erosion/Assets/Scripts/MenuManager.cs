@@ -5,6 +5,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 public class MenuManager : MonoBehaviour
 {
@@ -92,7 +93,13 @@ public class MenuManager : MonoBehaviour
 
     private void GenRandom()
     {
-        tg.randomiseValues();
+        float[] values = new float[]
+        {
+            Random.Range(60f, 100f),
+            Random.Range(60f, 110f),
+            Random.Range(0, 100000)
+        };
+        tg.values = values;
         tg.GenerateTerrain();
         changeMenu();
     }

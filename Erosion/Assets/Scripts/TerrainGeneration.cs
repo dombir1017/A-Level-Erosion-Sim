@@ -7,8 +7,8 @@ using Random = UnityEngine.Random;
 
 public class TerrainGeneration : MonoBehaviour
 {
-    const int length = 100, radius = 50, octaves = 5;
-    const float persistance = 0.35f, lacunarity = 3f; //Each octave's frequency multiplied by lacunarity
+    const int length = 100, radius = 65, octaves = 5;
+    const float persistance = 0.27f, lacunarity = 3.62f; //Each octave's frequency multiplied by lacunarity
                                                       //Each octave's amplitude multiplied by persistance
     private float terrainHeight;
     private float scale;
@@ -27,12 +27,6 @@ public class TerrainGeneration : MonoBehaviour
     private Mesh mesh;
 
     public Erosion er;
-    public void randomiseValues()
-    {
-        terrainHeight = Random.Range(20f, 50f);
-        scale = Random.Range(20f, 100f);
-        offset = Random.Range(0, 100000);
-    }
 
     public void GenerateTerrain()
     {
@@ -60,7 +54,6 @@ public class TerrainGeneration : MonoBehaviour
                 tris[i + 3] = tris[i + 2] = j + 1;
                 tris[i + 4] = tris[i + 1] = j + length + 1;
                 tris[i + 5] = j + length + 2;
-
             }
         }
         mesh.triangles = tris;
@@ -70,7 +63,7 @@ public class TerrainGeneration : MonoBehaviour
         {
             for (int x = 0; x <= length; x++, i++)
             {
-                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, verts[i].y);
+                float vertHeight = Mathf.InverseLerp(terrainHeight * Random.Range(0.85f, 1f), 0, verts[i].y);
                 colours[i] = gr.Evaluate(vertHeight);
             }
         }
