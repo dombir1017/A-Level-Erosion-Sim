@@ -36,6 +36,8 @@ public class Erosion : MonoBehaviour
 
         for (int i = 0; i < 10; i++)
         {
+            int startValue = i; //Thread requires local variable -
+            Debug.Log(i);
             Thread t = new(() => ThreadStart(i, ref verts));
             t.Start();
             threads.Add(t);
@@ -48,9 +50,19 @@ public class Erosion : MonoBehaviour
 
     private void ThreadStart(int startPoint, ref Vector3[] verts)
     {
+        //Debug.Log(startPoint);
         for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++) //From frist allocated point to last
         {
-            RunDroplet(randomTriangles[i], ref verts);
+            try
+            {
+                Debug.Log(i);
+            }
+            catch
+            {
+                Debug.Log(i);
+            }
+            
+            //RunDroplet(randomTriangles[i], ref verts);
         }
     }
     
