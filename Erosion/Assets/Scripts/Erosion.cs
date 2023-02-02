@@ -1,38 +1,20 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using System.Threading;
 
 public class Erosion : MonoBehaviour
 {
     public Mesh mesh;
-    public int dropletAttempts, length;
+    public int dropletAttempts, length, dropsCompleted = 0;
     public float carryAmount;
-    private TerrainGeneration tg;
+    private int[] tris;
     public MenuManager menuManager;
-    public float a;
+    List<int> randomTriangles;
 
-    //public List<Int32> indices;
-
-    //private void OnDrawGizmosSelected()
-    //{
-    //    Gizmos.color = Color.blue;
-    //    for(int i =0; i < indices.Count; i++)
-    //    {
-    //        Vector3 centre = (mesh.vertices[mesh.triangles[indices[i]*3]] + mesh.vertices[mesh.triangles[indices[i]*3+1]] + mesh.vertices[mesh.triangles[indices[i]*3+2]])/3;
-    //        Gizmos.DrawSphere(centre, 0.3f);
-    //    }
-    //}
-
-    private void Start()
-    {
-        tg = GetComponent<TerrainGeneration>();
-    }
-
-    private List<int> GetRandomTriangle(int start, int end, int numberOfElements)
+    private List<int> HashTriangles(int start, int end, int numberOfElements)
     {
         var random = new System.Random();
         HashSet<int> ints = new HashSet<int>();
@@ -43,26 +25,40 @@ public class Erosion : MonoBehaviour
         return ints.ToList();
     }
 
-    public IEnumerator StartErosion()
+    public void StartErosion()
     {
+        dropsCompleted = 0;
+        Vector3[] verts = mesh.vertices;
+        tris = mesh.triangles;
 
-        dropletAttempts = mesh.triangles.Length / 3;
-        for (int i = 0; i < mesh.triangles.Length / 3; i++)
+        randomTriangles = HashTriangles(0, mesh.triangles.Length / 3, dropletAttempts);
+        List<Thread> threads = new List<Thread>();
+
+        for (int i = 0; i < 10; i++)
         {
-            //int x = Random.Range(0, 19999);
-            //indices = new List<int>();
-            RunDroplet(1);
-            menuManager.progress.text = string.Join("/", i + 1, dropletAttempts);
-            yield return new WaitForSecondsRealtime(0.001f);
+            Thread t = new(() => ThreadStart(i, ref verts));
+            t.Start();
+            threads.Add(t);
         }
+
+        mesh.vertices = verts;
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
     }
 
-    private void RunDroplet(int triIndex, int prevPoint = 0, float sediment = 0f, int numMoved = 0)
+    private void ThreadStart(int startPoint, ref Vector3[] verts)
     {
-        //indices.Add(triIndex);
-        if (mesh.vertices[mesh.triangles[triIndex * 3]].y > 0)
+        for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++) //From frist allocated point to last
         {
-            Vector3 normalToTriangle = calculateNormal(triIndex * 3);
+            RunDroplet(randomTriangles[i], ref verts);
+        }
+    }
+    
+    private void RunDroplet(int triIndex, ref Vector3[] verts, float sediment = 0f, int numMoved = 0)
+    {
+        if (verts[tris[triIndex * 3]].y > 0 && numMoved < 100)
+        {
+            Vector3 normalToTriangle = calculateNormal(triIndex * 3, verts);
             Vector2 normalDirection = new Vector2(normalToTriangle.x, normalToTriangle.z).normalized;
 
             int newPosition = 0;
@@ -89,32 +85,31 @@ public class Erosion : MonoBehaviour
             }
 
             float gradient = Vector3.Angle(Vector3.up, normalToTriangle)/90; //Can never have overhang so will always be between 0 and 1
-            float newSediment = Math.Clamp(sediment + gradient, 0, carryAmount); //Gradient determines how much material is removed
+            float removedMaterial = 0.00005f;
+            float depositedMaterial = 0;
 
-            AddToTriangle(triIndex, (sediment - newSediment) * a);
+            if (removedMaterial + sediment > carryAmount)
+            {
+                depositedMaterial = removedMaterial + sediment - carryAmount * (1-gradient);
+            }
+            float newSediment = sediment + removedMaterial - depositedMaterial;
 
-            if (newPosition != prevPoint && numMoved < 100)
-            {
-                RunDroplet(newPosition, triIndex, newSediment, numMoved + 1);
-            }
-            else
-            {
-                mesh.vertices = tg.verts;
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
-            }
+            verts[tris[triIndex * 3]].y += depositedMaterial - removedMaterial;
+            verts[tris[triIndex * 3 + 1]].y += depositedMaterial - removedMaterial;
+            verts[tris[triIndex * 3 + 2]].y += depositedMaterial - removedMaterial;
+
+            RunDroplet(newPosition, ref verts, newSediment, numMoved + 1);
+        }
+        else
+        {
+            dropsCompleted += 1;
         }
     }
 
-    private void AddToTriangle(int triIndex, float amount)
+    private Vector3 calculateNormal(int triangle, Vector3[] verts)
     {
-        tg.verts[mesh.triangles[triIndex * 3]].y += amount;
-    }
-
-    private Vector3 calculateNormal(int triangle)
-    {
-        Vector3 U = mesh.vertices[mesh.triangles[triangle]] - mesh.vertices[mesh.triangles[triangle + 1]];
-        Vector3 V = mesh.vertices[mesh.triangles[triangle]] - mesh.vertices[mesh.triangles[triangle + 2]];
+        Vector3 U = verts[tris[triangle]] - verts[tris[triangle + 1]];
+        Vector3 V = verts[tris[triangle]] - verts[tris[triangle + 2]];
 
         Vector3 normal = new(){
             x = U.y * V.z - U.z * V.y,

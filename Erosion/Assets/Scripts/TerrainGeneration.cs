@@ -35,7 +35,7 @@ public class TerrainGeneration : MonoBehaviour
 
         verts = new Vector3[(length + 1) * (length + 1)];
 
-        for (int i = 0, y = 0; y <= length; y++)
+        for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset
         {
             for (int x = 0; x <= length; x++, i++)
             {
@@ -46,7 +46,7 @@ public class TerrainGeneration : MonoBehaviour
         mesh.vertices = verts;
 
         int[] tris = new int[length * length * 6];
-        for (int i = 0, j = 0, y = 0; y < length; y++, j++)
+        for (int i = 0, j = 0, y = 0; y < length; y++, j++) //Place indices of vertices into triangles array in correct order
         {
             for (int x = 0; x < length; x++, i += 6, j++)
             {
@@ -63,7 +63,7 @@ public class TerrainGeneration : MonoBehaviour
         {
             for (int x = 0; x <= length; x++, i++)
             {
-                float vertHeight = Mathf.InverseLerp(terrainHeight * Random.Range(0.85f, 1f), 0, verts[i].y);
+                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, verts[i].y);
                 colours[i] = gr.Evaluate(vertHeight);
             }
         }
@@ -73,7 +73,7 @@ public class TerrainGeneration : MonoBehaviour
         er.length = length;
     }
 
-    float Noise(int x, int y)
+    float Noise(int x, int y) //Uses perlin noise to generate height of each vertex
     {
         float val = 0;
         float amplitude = 1;

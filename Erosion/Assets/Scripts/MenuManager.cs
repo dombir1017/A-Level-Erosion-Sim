@@ -12,10 +12,16 @@ public class MenuManager : MonoBehaviour
     public Button quitButton, randomButton, loadButton, returnButton, regenerateButton, saveButton, startButton;
     public Dropdown dropdown;
     public TMP_InputField heightField, scaleField, offsetField, saveField;
-    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress;
+    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress, fileError, noFileError;
     public TerrainGeneration tg;
     public Erosion er;
+    public CameraController cc;
     private int currentMenu = 0;
+
+    private void Update()
+    {
+        progress.text = String.Join("/", er.dropsCompleted, er.dropletAttempts);
+    }
 
     private void Start()
     {
@@ -33,11 +39,12 @@ public class MenuManager : MonoBehaviour
     {
         progress.text = String.Join("/", "0", er.dropletAttempts);
         progress.gameObject.SetActive(true);
-        StartCoroutine(er.StartErosion());
+        er.StartErosion();
     }
 
     private void refreshFiles()
     {
+        Debug.Log(Application.persistentDataPath);
         string[] files = Directory.GetFiles(Application.persistentDataPath, "*.*", SearchOption.TopDirectoryOnly);
         var result = files.Select(a => Path.GetFileName(a));
         dropdown.ClearOptions();
@@ -64,16 +71,37 @@ public class MenuManager : MonoBehaviour
 
     private void LoadTerrain()
     {
-        float[] values = new float[3];
-        string path = Application.persistentDataPath +"/"+ dropdown.options[dropdown.value].text; 
-        StreamReader st = new StreamReader(path);
-        values[0] = float.Parse(st.ReadLine());
-        values[1] = float.Parse(st.ReadLine());
-        values[2] = float.Parse(st.ReadLine());
-        st.Close();
-        tg.values = values;
-        tg.GenerateTerrain();
-        changeMenu();
+        if (dropdown.options.Count > 0)
+        {
+            noFileError.gameObject.SetActive(false);
+            float[] values = new float[3];
+            string path = Application.persistentDataPath + "/" + dropdown.options[dropdown.value].text;
+            StreamReader st = new StreamReader(path);
+            string line1 = st.ReadLine();
+            string line2 = st.ReadLine();
+            string line3 = st.ReadLine();
+
+            if (float.TryParse(line1, out _) && float.TryParse(line2, out _) && float.TryParse(line3, out _))
+            {
+                fileError.gameObject.SetActive(false);
+                st.BaseStream.Position = 0;
+                values[0] = float.Parse(line1);
+                values[1] = float.Parse(line2);
+                values[2] = float.Parse(line3);
+                tg.values = values;
+                tg.GenerateTerrain();
+                changeMenu();
+            }
+            else
+            {
+                fileError.gameObject.SetActive(true);
+            }
+            st.Close();
+        }
+        else
+        {
+            noFileError.gameObject.SetActive(true);
+        }
     }
     private void Regenerate()
     {
@@ -106,6 +134,7 @@ public class MenuManager : MonoBehaviour
 
     private void changeMenu()
     {
+        cc.enabled = !cc.isActiveAndEnabled;
         for (int i = 0; i < transform.childCount; i++)
         {
             Transform menuElement = this.gameObject.transform.GetChild(i);
