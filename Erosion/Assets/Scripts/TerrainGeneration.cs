@@ -81,16 +81,28 @@ public class TerrainGeneration : MonoBehaviour
 
         for (int i = 1; i < octaves; i++)
         {
-            float relativeDistance = 1 - Vector2.Distance(new Vector2(x-length*0.5f, y-length*0.5f), Vector2.zero)/radius;
+            float relativeDistance = 1 - Vector2.Distance(new Vector2(x-length*0.5f, y-length*0.5f), Vector2.zero)/radius;//Negative for values further from centre of terrain
             float scaledX = (x+offset) / scale * frequency;
             float scaledY = (y+offset) / scale * frequency;
 
             float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
-            val += noiseValue * amplitude * terrainHeight * curve.Evaluate(relativeDistance*noiseValue);
+            val += noiseValue * amplitude * terrainHeight * FadeTerrain(relativeDistance*noiseValue);
             frequency *= lacunarity;
             amplitude *= persistance;
         }
 
         return val;
+    }
+
+    float FadeTerrain(float x)
+    {
+        if (x > 1)
+        {
+            return 1;
+        }
+        else
+        {
+            return (((6 * x - 15) * x + 10) * x * x * x) - 0.2f; //((6*t - 15)*t + 10)*t*t*t;
+        }
     }
 }

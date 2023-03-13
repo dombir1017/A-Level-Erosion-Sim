@@ -5734,10 +5734,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 0}
-  dropletAttempts: 1000
+  dropletAttempts: 20000
   length: 0
-  dropsCompleted: 0
+  threadDropletsCompleted: 
   carryAmount: 100
+  removal: 0.005
   menuManager: {fileID: 538650073}
 --- !u!1 &1176448119
 GameObject:

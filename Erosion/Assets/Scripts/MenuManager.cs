@@ -20,7 +20,7 @@ public class MenuManager : MonoBehaviour
 
     private void Update()
     {
-        progress.text = String.Join("/", er.dropsCompleted, er.dropletAttempts);
+        progress.text = String.Join("/", er.threadDropletsCompleted.Sum(), er.dropletAttempts);
     }
 
     private void Start()
@@ -37,7 +37,6 @@ public class MenuManager : MonoBehaviour
 
     private void StartErosion()
     {
-        progress.text = String.Join("/", "0", er.dropletAttempts);
         progress.gameObject.SetActive(true);
         er.StartErosion();
     }
@@ -124,7 +123,7 @@ public class MenuManager : MonoBehaviour
         float[] values = new float[]
         {
             Random.Range(60f, 100f),
-            Random.Range(60f, 110f),
+            Random.Range(80f, 110f),
             Random.Range(0, 100000)
         };
         tg.values = values;

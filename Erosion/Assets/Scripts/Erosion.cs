@@ -8,8 +8,9 @@ using System.Threading;
 public class Erosion : MonoBehaviour
 {
     public Mesh mesh;
-    public int dropletAttempts, length, dropsCompleted = 0;
-    public float carryAmount;
+    public int dropletAttempts, length;
+    public int[] threadDropletsCompleted;
+    public float carryAmount, removal;
     private int[] tris;
     public MenuManager menuManager;
     List<int> randomTriangles;
@@ -27,7 +28,7 @@ public class Erosion : MonoBehaviour
 
     public void StartErosion()
     {
-        dropsCompleted = 0;
+        threadDropletsCompleted = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         Vector3[] verts = mesh.vertices;
         tris = mesh.triangles;
 
@@ -36,11 +37,12 @@ public class Erosion : MonoBehaviour
 
         for (int i = 0; i < 10; i++)
         {
-            Thread t = new(() => ThreadStart(i, ref verts));
+            int startPoint = i;
+            Thread t = new(() => ThreadStart(startPoint, ref verts));
             t.Start();
             threads.Add(t);
         }
-
+ 
         mesh.vertices = verts;
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
@@ -51,6 +53,7 @@ public class Erosion : MonoBehaviour
         for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++) //From frist allocated point to last
         {
             RunDroplet(randomTriangles[i], ref verts);
+            threadDropletsCompleted[startPoint]++;
         }
     }
     
@@ -85,24 +88,21 @@ public class Erosion : MonoBehaviour
             }
 
             float gradient = Vector3.Angle(Vector3.up, normalToTriangle)/90; //Can never have overhang so will always be between 0 and 1
-            float removedMaterial = 0.00005f;
-            float depositedMaterial = 0;
+            float removedMaterial = (1-gradient) * removal;
+            float depositedMaterial = sediment * gradient;
 
-            if (removedMaterial + sediment > carryAmount)
-            {
-                depositedMaterial = removedMaterial + sediment - carryAmount * (1-gradient);
-            }
-            float newSediment = sediment + removedMaterial - depositedMaterial;
+            //if (removedMaterial + sediment > carryAmount)
+            //{
+            //    depositedMaterial = removedMaterial + sediment - carryAmount;
+            //    removedMaterial -= depositedMaterial;
+            //}
+            float newSediment = sediment + removedMaterial;
 
             verts[tris[triIndex * 3]].y += depositedMaterial - removedMaterial;
             verts[tris[triIndex * 3 + 1]].y += depositedMaterial - removedMaterial;
             verts[tris[triIndex * 3 + 2]].y += depositedMaterial - removedMaterial;
 
             RunDroplet(newPosition, ref verts, newSediment, numMoved + 1);
-        }
-        else
-        {
-            dropsCompleted += 1;
         }
     }
 
