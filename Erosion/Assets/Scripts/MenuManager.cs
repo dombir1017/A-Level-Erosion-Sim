@@ -20,7 +20,7 @@ public class MenuManager : MonoBehaviour
 
     private void Update()
     {
-        progress.text = String.Join("/", er.threadDropletsCompleted.Sum(), er.dropletAttempts);
+        progress.text = String.Join("/", er.numIterationsRun, er.numIterations);
     }
 
     private void Start()
@@ -38,12 +38,11 @@ public class MenuManager : MonoBehaviour
     private void StartErosion()
     {
         progress.gameObject.SetActive(true);
-        er.StartErosion();
+        StartCoroutine(er.StartErosion());
     }
 
     private void refreshFiles()
     {
-        Debug.Log(Application.persistentDataPath);
         string[] files = Directory.GetFiles(Application.persistentDataPath, "*.*", SearchOption.TopDirectoryOnly);
         var result = files.Select(a => Path.GetFileName(a));
         dropdown.ClearOptions();

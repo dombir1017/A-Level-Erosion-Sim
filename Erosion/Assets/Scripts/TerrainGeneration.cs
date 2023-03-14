@@ -7,9 +7,9 @@ using Random = UnityEngine.Random;
 
 public class TerrainGeneration : MonoBehaviour
 {
-    const int length = 100, radius = 65, octaves = 5;
-    const float persistance = 0.27f, lacunarity = 3.62f; //Each octave's frequency multiplied by lacunarity
-                                                      //Each octave's amplitude multiplied by persistance
+    private const int length = 100, radius = 65, octaves = 5;
+    private const float persistance = 0.27f, lacunarity = 3.62f; //Each octave's frequency multiplied by lacunarity
+                                                                //Each octave's amplitude multiplied by persistance
     private float terrainHeight;
     private float scale;
     private int offset;
@@ -23,7 +23,6 @@ public class TerrainGeneration : MonoBehaviour
     }
 
     public Gradient gr;
-    public AnimationCurve curve;
     private Mesh mesh;
 
     public Erosion er;

@@ -4,18 +4,23 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Threading;
+using Unity.VisualScripting;
+using UnityEngine.Rendering;
 
 public class Erosion : MonoBehaviour
 {
-    public Mesh mesh;
-    public int dropletAttempts, length;
-    public int[] threadDropletsCompleted;
-    public float carryAmount, removal;
+    private const int dropletAttempts = 10000;
     private int[] tris;
-    public MenuManager menuManager;
-    List<int> randomTriangles;
+    private List<int> randomVerts;
 
-    private List<int> HashTriangles(int start, int end, int numberOfElements)
+    public int numIterations;
+    public int numIterationsRun;
+    public Mesh mesh;
+    public int length;
+    public float removal, deposition, maxSediment;
+    public MenuManager menuManager;
+
+    private List<int> HashVerts(int start, int end, int numberOfElements)
     {
         var random = new System.Random();
         HashSet<int> ints = new HashSet<int>();
@@ -26,96 +31,84 @@ public class Erosion : MonoBehaviour
         return ints.ToList();
     }
 
-    public void StartErosion()
+    public IEnumerator StartErosion()
     {
-        threadDropletsCompleted = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        numIterationsRun = 0;
         Vector3[] verts = mesh.vertices;
         tris = mesh.triangles;
 
-        randomTriangles = HashTriangles(0, mesh.triangles.Length / 3, dropletAttempts);
-        List<Thread> threads = new List<Thread>();
-
-        for (int i = 0; i < 10; i++)
+        for(int j = 0; j < numIterations; j++)
         {
-            int startPoint = i;
-            Thread t = new(() => ThreadStart(startPoint, ref verts));
-            t.Start();
-            threads.Add(t);
-        }
- 
-        mesh.vertices = verts;
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
-    }
+            randomVerts = HashVerts(0, mesh.vertices.Length, dropletAttempts); //Hash vertices to get droplet start points for iteration
+            Thread[] threads = new Thread[10];
 
-    private void ThreadStart(int startPoint, ref Vector3[] verts)
-    {
-        for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++) //From frist allocated point to last
-        {
-            RunDroplet(randomTriangles[i], ref verts);
-            threadDropletsCompleted[startPoint]++;
-        }
-    }
-    
-    private void RunDroplet(int triIndex, ref Vector3[] verts, float sediment = 0f, int numMoved = 0)
-    {
-        if (verts[tris[triIndex * 3]].y > 0 && numMoved < 100)
-        {
-            Vector3 normalToTriangle = calculateNormal(triIndex * 3, verts);
-            Vector2 normalDirection = new Vector2(normalToTriangle.x, normalToTriangle.z).normalized;
-
-            int newPosition = 0;
-            int verticalIndex = length * 2 - 2;
-            float angle = Vector2.SignedAngle(normalDirection, Vector2.up);
-            int direction = Mathf.RoundToInt(angle / 45f);
-            switch (Math.Abs(direction))
+            for (int i = 0; i < 10; i++)//Split each iteration between 10 threads
             {
-                case 0:
-                    newPosition = triIndex + verticalIndex;
-                    break;
-                case 1:
-                    newPosition = triIndex + verticalIndex + direction;
-                    break;
-                case 2:
-                    newPosition = triIndex + (direction / 2);
-                    break;
-                case 3:
-                    newPosition = triIndex - verticalIndex + (direction / 3);
-                    break;
-                case 4:
-                    newPosition = triIndex - verticalIndex;
-                    break;
+                int startPoint = i;
+                Thread t = new(() => ThreadStart(startPoint, ref verts));
+                t.Start();
+                threads[i] = t;
+            }
+            for (int i = 0; i < 10; i++)//Wait for each thread to finish
+            {
+                threads[i].Join();
             }
 
-            float gradient = Vector3.Angle(Vector3.up, normalToTriangle)/90; //Can never have overhang so will always be between 0 and 1
-            float removedMaterial = (1-gradient) * removal;
-            float depositedMaterial = sediment * gradient;
-
-            //if (removedMaterial + sediment > carryAmount)
-            //{
-            //    depositedMaterial = removedMaterial + sediment - carryAmount;
-            //    removedMaterial -= depositedMaterial;
-            //}
-            float newSediment = sediment + removedMaterial;
-
-            verts[tris[triIndex * 3]].y += depositedMaterial - removedMaterial;
-            verts[tris[triIndex * 3 + 1]].y += depositedMaterial - removedMaterial;
-            verts[tris[triIndex * 3 + 2]].y += depositedMaterial - removedMaterial;
-
-            RunDroplet(newPosition, ref verts, newSediment, numMoved + 1);
+            numIterationsRun ++;
+            mesh.vertices = verts; //Redisplay terrain
+            mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
+            yield return new WaitForFixedUpdate();
         }
     }
 
-    private Vector3 calculateNormal(int triangle, Vector3[] verts)
+    private void ThreadStart(int startPoint, ref Vector3[] verts)//Run for each thread - allocates start and end points for each thread to work on
     {
-        Vector3 U = verts[tris[triangle]] - verts[tris[triangle + 1]];
-        Vector3 V = verts[tris[triangle]] - verts[tris[triangle + 2]];
+        for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++)
+        {
+            RunDroplet(randomVerts[i], ref verts);
+        }
+    }
 
-        Vector3 normal = new(){
-            x = U.y * V.z - U.z * V.y,
-            y = U.z * V.x - U.x * V.z,
-            z = U.x * V.y - U.y * V.x
-        };
-        return Vector3.Normalize(normal);
+    private void RunDroplet(int vertIndex, ref Vector3[] verts, float sediment = 0f, float velocity = 0f)//Runs a single droplet down terrain from given point recursively
+    {
+        if (verts[vertIndex].y > 0)//If height of vertex above sea level
+        {
+            verts[vertIndex].y -= removal;
+
+            Dictionary<int, float> heights = new Dictionary<int, float>();
+            for (int i = -1; i < 3; i++)//Add vertex data to dictionary if its height is lower than central vertex
+            {
+                int index = vertIndex;
+                switch (Math.Abs(i))
+                {
+                    case 0:
+                        index -= 1;
+                        break;
+                    case 1:
+                        index += i * (length + 1);
+                        break;
+                    case 2:
+                        index += 1;
+                        break;
+                }
+                Vector3 examinedVertex = verts[index];
+                if (examinedVertex.y < verts[vertIndex].y)
+                {
+                    heights.Add(index, examinedVertex.y);
+                }
+            }
+
+            if (heights.Count > 0) //If vertex is not lowest available, run again
+            {
+                int newPosition = heights.OrderBy(x => x.Value).First().Key;
+                float newVelocity = verts[vertIndex].y - verts[newPosition].y;
+                RunDroplet(newPosition, ref verts);
+            }
+            else
+            {
+                verts[vertIndex].y += sediment; //Deposit all currently carried sediment
+            }
+        }
     }
 }
