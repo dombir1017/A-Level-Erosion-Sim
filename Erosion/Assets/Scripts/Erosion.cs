@@ -70,11 +70,19 @@ public class Erosion : MonoBehaviour
         }
     }
 
-    private void RunDroplet(int vertIndex, ref Vector3[] verts, float sediment = 0f, float velocity = 0f)//Runs a single droplet down terrain from given point recursively
+    private void RunDroplet(int vertIndex, ref Vector3[] verts, float sediment = 0f)//Runs a single droplet down terrain from given point recursively
     {
         if (verts[vertIndex].y > 0)//If height of vertex above sea level
         {
-            verts[vertIndex].y -= removal;
+            float removedMaterial = removal / 10000f;
+            float newSediment = Math.Clamp(removedMaterial + sediment, 0, maxSediment);
+            float depositedMaterial = 0;
+            if (newSediment == sediment)
+            {
+                depositedMaterial = removedMaterial;
+            }
+
+            verts[vertIndex].y -= removedMaterial-depositedMaterial;
 
             Dictionary<int, float> heights = new Dictionary<int, float>();
             for (int i = -1; i < 3; i++)//Add vertex data to dictionary if its height is lower than central vertex
@@ -103,7 +111,7 @@ public class Erosion : MonoBehaviour
             {
                 int newPosition = heights.OrderBy(x => x.Value).First().Key;
                 float newVelocity = verts[vertIndex].y - verts[newPosition].y;
-                RunDroplet(newPosition, ref verts);
+                RunDroplet(newPosition, ref verts, newSediment);
             }
             else
             {
