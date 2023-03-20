@@ -75,7 +75,7 @@ public class TerrainGeneration : MonoBehaviour
         float amplitude = 1;
         float frequency = 1;
 
-        for (int i = 1; i < octaves; i++)
+        for (int i = 0; i < octaves; i++)
         {
             float scaledX = (x+offset) / scale * frequency;
             float scaledY = (y + offset) / scale * frequency;
