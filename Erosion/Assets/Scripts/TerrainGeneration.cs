@@ -31,13 +31,16 @@ public class TerrainGeneration : MonoBehaviour
         vertHardness = new Dictionary<Vector3, float>();
         this.GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "terrain mesh";
+        Color[] colours = new Color[(length + 1) * (length + 1)];
 
-        for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset based upon noise values
+        for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset and assigns colours to each vertex
         {
             for (int x = 0; x <= length; x++, i++)
             {
-                float length = GetHeight(x, y);
-                vertHardness.Add(new Vector3(x, length, y), getHardness(x, y));
+                float height = GetHeight(x, y);
+                vertHardness.Add(new Vector3(x, height, y), getHardness(x, y));
+                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, vertHardness.ElementAt(i).Key.y);
+                colours[i] = gr.Evaluate(vertHeight);
             }
         }
 
@@ -53,15 +56,6 @@ public class TerrainGeneration : MonoBehaviour
             }
         }
 
-        Color[] colours = new Color[vertHardness.Keys.Count];
-        for (int i = 0, y = 0; y <= length; y++) //Colour each vertex of terrain depending upon its height
-        {
-            for (int x = 0; x <= length; x++, i++)
-            {
-                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, vertHardness.ElementAt(i).Key.y);
-                colours[i] = gr.Evaluate(vertHeight);
-            }
-        }
         mesh.vertices = vertHardness.Keys.ToArray();
         mesh.triangles = tris;
         mesh.colors = colours;
@@ -69,7 +63,7 @@ public class TerrainGeneration : MonoBehaviour
         mesh.RecalculateBounds();
     }
 
-    public void RedisplayMesh(Vector3[] v)//Sets mesh vertices
+    public void RedisplayMesh(Vector3[] v)//Sets mesh vertices to new values
     {
         mesh.vertices = v;
         mesh.RecalculateNormals();
@@ -96,7 +90,7 @@ public class TerrainGeneration : MonoBehaviour
     
     float getHardness(int x, int y) //Gets hardness value in range 0 to 1 for given vertex - higher vertices have higher hardness values
     {
-        float val = 0;
+        float val;
         float scaledX = (x + offset) / scale;
         float scaledY = (y + offset) / scale;
 
