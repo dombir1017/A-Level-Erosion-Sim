@@ -8,8 +8,8 @@ using Random = UnityEngine.Random;
 public class TerrainGeneration : MonoBehaviour
 {
     private const int length = 100, radius = 65, octaves = 5;
-    private const float persistance = 0.27f, lacunarity = 3.62f; //Each octave's frequency multiplied by lacunarity
-                                                                //Each octave's amplitude multiplied by persistance
+    private const float persistance = 0.15f, lacunarity = 4f;
+                                                             
     private float terrainHeight;
     private float scale;
     private int offset;
@@ -27,14 +27,14 @@ public class TerrainGeneration : MonoBehaviour
 
     public Erosion er;
 
-    public void GenerateTerrain()
+    public void GenerateTerrain()//Generates terrain with current values
     {
         this.GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "terrain mesh";
 
         verts = new Vector3[(length + 1) * (length + 1)];
 
-        for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset
+        for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset based upon noise values
         {
             for (int x = 0; x <= length; x++, i++)
             {
@@ -58,7 +58,7 @@ public class TerrainGeneration : MonoBehaviour
         mesh.triangles = tris;
 
         Color[] colours = new Color[verts.Length];
-        for (int i = 0, y = 0; y <= length; y++)
+        for (int i = 0, y = 0; y <= length; y++) //Colour each vertex of terrain depending upon its height
         {
             for (int x = 0; x <= length; x++, i++)
             {
@@ -80,28 +80,14 @@ public class TerrainGeneration : MonoBehaviour
 
         for (int i = 1; i < octaves; i++)
         {
-            float relativeDistance = 1 - Vector2.Distance(new Vector2(x-length*0.5f, y-length*0.5f), Vector2.zero)/radius;//Negative for values further from centre of terrain
             float scaledX = (x+offset) / scale * frequency;
-            float scaledY = (y+offset) / scale * frequency;
+            float scaledY = (y + offset) / scale * frequency;
 
             float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
-            val += noiseValue * amplitude * terrainHeight * FadeTerrain(relativeDistance*noiseValue);
-            frequency *= lacunarity;
-            amplitude *= persistance;
+            val += noiseValue * amplitude * terrainHeight;
+            frequency *= lacunarity;  //Each octave's frequency multiplied by lacunarity
+            amplitude *= persistance;//Each octave's amplitude multiplied by persistance
         }
-
         return val;
-    }
-
-    float FadeTerrain(float x)
-    {
-        if (x > 1)
-        {
-            return 1;
-        }
-        else
-        {
-            return (((6 * x - 15) * x + 10) * x * x * x) - 0.2f; //((6*t - 15)*t + 10)*t*t*t;
-        }
     }
 }

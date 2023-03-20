@@ -11,44 +11,46 @@ public class MenuManager : MonoBehaviour
 {
     public Button quitButton, randomButton, loadButton, returnButton, regenerateButton, saveButton, startButton;
     public Dropdown dropdown;
-    public TMP_InputField heightField, scaleField, offsetField, saveField;
-    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress, fileError, noFileError;
+    public TMP_InputField heightField, scaleField, offsetField, saveField, iterationField;
+    public Slider removalSlider, maxSedimentSlider;
+    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress, fileError, noFileError, iterationText, removalText, maxSedimentText;
     public TerrainGeneration tg;
     public Erosion er;
     public CameraController cc;
     private int currentMenu = 0;
 
-    private void Update()
+    private void Update()//Set number of iterations of erosion algorithm completed each frame
     {
-        progress.text = String.Join("/", er.numIterationsRun, er.numIterations);
+        progress.text = String.Join("/", er.numIterationsRun, er.values[0]);
     }
 
-    private void Start()
+    private void Start()//Run at start of program - refresh dropdown for files and add listeners to menu buttons
     {
         refreshFiles();
         quitButton.onClick.AddListener(Quit);
         randomButton.onClick.AddListener(GenRandom);
-        returnButton.onClick.AddListener(changeMenu);
+        returnButton.onClick.AddListener(ChangeMenu);
         loadButton.onClick.AddListener(LoadTerrain);
         regenerateButton.onClick.AddListener(Regenerate);
         saveButton.onClick.AddListener(SaveTerrain);
         startButton.onClick.AddListener(StartErosion);
     }
 
-    private void StartErosion()
+    private void StartErosion()//Starts erosion with user specified values
     {
         progress.gameObject.SetActive(true);
+        er.values = new float[] {float.Parse(iterationField.text), removalSlider.value, maxSedimentSlider.value};
         StartCoroutine(er.StartErosion());
     }
 
-    private void refreshFiles()
+    private void refreshFiles()//Finds saved terrain files and adds to dropdown menu
     {
         string[] files = Directory.GetFiles(Application.persistentDataPath, "*.*", SearchOption.TopDirectoryOnly);
         var result = files.Select(a => Path.GetFileName(a));
         dropdown.ClearOptions();
         dropdown.AddOptions(result.ToListPooled());
     }
-    private void SaveTerrain()
+    private void SaveTerrain()//Save terrain that was just generated to file
     {
         string path = Application.persistentDataPath + "/" + saveField.text + ".txt";
         if (File.Exists(path))
@@ -67,7 +69,7 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    private void LoadTerrain()
+    private void LoadTerrain()//Generate terrain based upon values in selected file
     {
         if (dropdown.options.Count > 0)
         {
@@ -79,7 +81,7 @@ public class MenuManager : MonoBehaviour
             string line2 = st.ReadLine();
             string line3 = st.ReadLine();
 
-            if (float.TryParse(line1, out _) && float.TryParse(line2, out _) && float.TryParse(line3, out _))
+            if (float.TryParse(line1, out _) && float.TryParse(line2, out _) && float.TryParse(line3, out _))//Validate that file is of correct format
             {
                 fileError.gameObject.SetActive(false);
                 st.BaseStream.Position = 0;
@@ -88,7 +90,7 @@ public class MenuManager : MonoBehaviour
                 values[2] = float.Parse(line3);
                 tg.values = values;
                 tg.GenerateTerrain();
-                changeMenu();
+                ChangeMenu();
             }
             else
             {
@@ -101,7 +103,7 @@ public class MenuManager : MonoBehaviour
             noFileError.gameObject.SetActive(true);
         }
     }
-    private void Regenerate()
+    private void Regenerate()//Regenerates terrain with new user specified values
     {
         try
         {
@@ -114,23 +116,23 @@ public class MenuManager : MonoBehaviour
         }
         
         tg.GenerateTerrain();
-        changeValues();
+        ChangeValues();
     }
 
-    private void GenRandom()
+    private void GenRandom()//Choose random values then generate terrain with them
     {
         float[] values = new float[]
         {
-            Random.Range(60f, 100f),
-            Random.Range(80f, 110f),
+            Random.Range(40f, 60f),
+            Random.Range(30f, 60f),
             Random.Range(0, 100000)
         };
         tg.values = values;
         tg.GenerateTerrain();
-        changeMenu();
+        ChangeMenu();
     }
 
-    private void changeMenu()
+    private void ChangeMenu()//Change between two menus
     {
         cc.enabled = !cc.isActiveAndEnabled;
         for (int i = 0; i < transform.childCount; i++)
@@ -146,11 +148,11 @@ public class MenuManager : MonoBehaviour
             }
         }
         currentMenu = (currentMenu + 1) % 2;
-        changeValues();
+        ChangeValues();
         refreshFiles();
     }
 
-    private void changeValues()
+    private void ChangeValues()//Updates displayed values for terrain parameters
     {
         float[] values = tg.values;
         heightText.text = Convert.ToString(values[0]);
@@ -160,6 +162,13 @@ public class MenuManager : MonoBehaviour
         scaleField.text = null;
         offsetField.text = null;
     }
+
+    public void UpdateErosionOptionText()//Refresh text for erosion options to display current values
+    {
+        iterationText.text = iterationField.text;
+        removalText.text = removalSlider.value.ToString();
+        maxSedimentText.text = maxSedimentSlider.value.ToString();
+    } 
     private void Quit()
     {
         Application.Quit();

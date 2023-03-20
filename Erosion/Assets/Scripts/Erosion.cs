@@ -6,21 +6,26 @@ using UnityEngine;
 using System.Threading;
 using Unity.VisualScripting;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 
 public class Erosion : MonoBehaviour
 {
     private const int dropletAttempts = 10000;
-    private int[] tris;
     private List<int> randomVerts;
+    private int numIterations;
+    private float removal, maxSediment;
 
-    public int numIterations;
+    public float[] values
+    {
+        get {return new float[] { numIterations, removal, maxSediment };}
+        set { numIterations = Convert.ToInt32(value[0]); removal = value[1]; maxSediment = value[2] ; }
+    }
+
     public int numIterationsRun;
     public Mesh mesh;
     public int length;
-    public float removal, deposition, maxSediment;
-    public MenuManager menuManager;
 
-    private List<int> HashVerts(int start, int end, int numberOfElements)
+    private List<int> HashVerts(int start, int end, int numberOfElements) //Creates list of random integers that are used as start points for each droplet
     {
         var random = new System.Random();
         HashSet<int> ints = new HashSet<int>();
@@ -35,7 +40,6 @@ public class Erosion : MonoBehaviour
     {
         numIterationsRun = 0;
         Vector3[] verts = mesh.vertices;
-        tris = mesh.triangles;
 
         for(int j = 0; j < numIterations; j++)
         {
@@ -72,7 +76,9 @@ public class Erosion : MonoBehaviour
 
     private void RunDroplet(int vertIndex, ref Vector3[] verts, float sediment = 0f)//Runs a single droplet down terrain from given point recursively
     {
-        if (verts[vertIndex].y > 0)//If height of vertex above sea level
+        int vertX = vertIndex % (length + 1);
+        int vertY = vertIndex / (length + 1);
+        if (vertX < length - 1 && vertX > 1 && vertY < length - 1 && vertY > 1)
         {
             float removedMaterial = removal / 10000f;
             float newSediment = Math.Clamp(removedMaterial + sediment, 0, maxSediment);
@@ -82,9 +88,9 @@ public class Erosion : MonoBehaviour
                 depositedMaterial = removedMaterial;
             }
 
-            verts[vertIndex].y -= removedMaterial-depositedMaterial;
+            verts[vertIndex].y -= removedMaterial - depositedMaterial;
 
-            Dictionary<int, float> heights = new Dictionary<int, float>();
+            Dictionary<int, float> heights = new();
             for (int i = -1; i < 3; i++)//Add vertex data to dictionary if its height is lower than central vertex
             {
                 int index = vertIndex;
@@ -110,7 +116,6 @@ public class Erosion : MonoBehaviour
             if (heights.Count > 0) //If vertex is not lowest available, run again
             {
                 int newPosition = heights.OrderBy(x => x.Value).First().Key;
-                float newVelocity = verts[vertIndex].y - verts[newPosition].y;
                 RunDroplet(newPosition, ref verts, newSediment);
             }
             else
