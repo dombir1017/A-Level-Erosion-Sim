@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Threading;
-using Unity.VisualScripting;
-using UnityEngine.Rendering;
-using UnityEngine.UIElements;
 
 public class Erosion : MonoBehaviour
 {
@@ -22,8 +19,9 @@ public class Erosion : MonoBehaviour
     }
 
     public int numIterationsRun;
-    public Mesh mesh;
-    public int length;
+    public TerrainGeneration tg;
+    private int length;
+    private Dictionary<Vector3, float> vertHardness;
 
     private List<int> HashVerts(int start, int end, int numberOfElements) //Creates list of random integers that are used as start points for each droplet
     {
@@ -38,18 +36,21 @@ public class Erosion : MonoBehaviour
 
     public IEnumerator StartErosion()
     {
+        length = tg.length;
         numIterationsRun = 0;
-        Vector3[] verts = mesh.vertices;
+        vertHardness = tg.vertHardness;
+        Vector3[] verts = vertHardness.Keys.ToArray();
+        float[] hardness = vertHardness.Values.ToArray();
 
         for(int j = 0; j < numIterations; j++)
         {
-            randomVerts = HashVerts(0, mesh.vertices.Length, dropletAttempts); //Hash vertices to get droplet start points for iteration
+            randomVerts = HashVerts(0, vertHardness.Count, dropletAttempts); //Hash vertices to get droplet start points for iteration
             Thread[] threads = new Thread[10];
 
             for (int i = 0; i < 10; i++)//Split each iteration between 10 threads
             {
                 int startPoint = i;
-                Thread t = new(() => ThreadStart(startPoint, ref verts));
+                Thread t = new(() => ThreadStart(startPoint, ref verts, ref hardness));
                 t.Start();
                 threads[i] = t;
             }
@@ -59,28 +60,26 @@ public class Erosion : MonoBehaviour
             }
 
             numIterationsRun ++;
-            mesh.vertices = verts; //Redisplay terrain
-            mesh.RecalculateBounds();
-            mesh.RecalculateNormals();
+            tg.RedisplayMesh(verts);
             yield return new WaitForFixedUpdate();
         }
     }
 
-    private void ThreadStart(int startPoint, ref Vector3[] verts)//Run for each thread - allocates start and end points for each thread to work on
+    private void ThreadStart(int startPoint, ref Vector3[] verts, ref float[] hardness)//Run for each thread - allocates start and end points for each thread to work on
     {
         for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++)
         {
-            RunDroplet(randomVerts[i], ref verts);
+            RunDroplet(randomVerts[i], ref verts, ref hardness);
         }
     }
 
-    private void RunDroplet(int vertIndex, ref Vector3[] verts, float sediment = 0f)//Runs a single droplet down terrain from given point recursively
+    private void RunDroplet(int vertIndex, ref Vector3[] verts, ref float[] hardness, float sediment = 0f)//Runs a single droplet down terrain from given point recursively
     {
         int vertX = vertIndex % (length + 1);
         int vertY = vertIndex / (length + 1);
         if (vertX < length - 1 && vertX > 1 && vertY < length - 1 && vertY > 1)
         {
-            float removedMaterial = removal / 10000f;
+            float removedMaterial = removal / 10000f * (1-hardness[vertIndex]); //Removes material based upon terrain hardness at point
             float newSediment = Math.Clamp(removedMaterial + sediment, 0, maxSediment);
             float depositedMaterial = 0;
             if (newSediment == sediment)
@@ -116,7 +115,7 @@ public class Erosion : MonoBehaviour
             if (heights.Count > 0) //If vertex is not lowest available, run again
             {
                 int newPosition = heights.OrderBy(x => x.Value).First().Key;
-                RunDroplet(newPosition, ref verts, newSediment);
+                RunDroplet(newPosition, ref verts, ref hardness, newSediment);
             }
             else
             {

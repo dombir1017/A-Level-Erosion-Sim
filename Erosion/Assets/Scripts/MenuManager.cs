@@ -13,7 +13,7 @@ public class MenuManager : MonoBehaviour
     public Dropdown dropdown;
     public TMP_InputField heightField, scaleField, offsetField, saveField, iterationField;
     public Slider removalSlider, maxSedimentSlider;
-    public TMP_Text heightText, scaleText, offsetText, errorText, fileExists, progress, fileError, noFileError, iterationText, removalText, maxSedimentText;
+    public TMP_Text heightText, scaleText, offsetText, invalidTerrainText, invalidIterationsText, fileExists, progress, fileError, noFileError, iterationText, removalText, maxSedimentText;
     public TerrainGeneration tg;
     public Erosion er;
     public CameraController cc;
@@ -38,9 +38,19 @@ public class MenuManager : MonoBehaviour
 
     private void StartErosion()//Starts erosion with user specified values
     {
-        progress.gameObject.SetActive(true);
-        er.values = new float[] {float.Parse(iterationField.text), removalSlider.value, maxSedimentSlider.value};
-        StartCoroutine(er.StartErosion());
+        er.tg = tg;
+        try
+        {
+            progress.gameObject.SetActive(true);
+            invalidIterationsText.gameObject.SetActive(false);
+            er.values = new float[] { float.Parse(iterationField.text), removalSlider.value, maxSedimentSlider.value };
+            StartCoroutine(er.StartErosion());
+        }
+        catch
+        {
+            progress.gameObject.SetActive(false);
+            invalidIterationsText.gameObject.SetActive(true);
+        }
     }
 
     private void refreshFiles()//Finds saved terrain files and adds to dropdown menu
@@ -107,16 +117,16 @@ public class MenuManager : MonoBehaviour
     {
         try
         {
-            errorText.gameObject.SetActive(false);
+            invalidTerrainText.gameObject.SetActive(false);
             tg.values = new float[] { float.Parse(heightField.text), float.Parse(scaleField.text), float.Parse(offsetField.text) };
         }
         catch
         {
-            errorText.gameObject.SetActive(true);
+            invalidTerrainText.gameObject.SetActive(true);
         }
         
         tg.GenerateTerrain();
-        ChangeValues();
+        UpdateTerrainValues();
     }
 
     private void GenRandom()//Choose random values then generate terrain with them
@@ -148,11 +158,11 @@ public class MenuManager : MonoBehaviour
             }
         }
         currentMenu = (currentMenu + 1) % 2;
-        ChangeValues();
+        UpdateTerrainValues();
         refreshFiles();
     }
 
-    private void ChangeValues()//Updates displayed values for terrain parameters
+    private void UpdateTerrainValues()//Updates displayed values for terrain parameters
     {
         float[] values = tg.values;
         heightText.text = Convert.ToString(values[0]);
@@ -163,7 +173,7 @@ public class MenuManager : MonoBehaviour
         offsetField.text = null;
     }
 
-    public void UpdateErosionOptionText()//Refresh text for erosion options to display current values
+    public void UpdateErosionValues()//Updates displayed values for erosion parameters
     {
         iterationText.text = iterationField.text;
         removalText.text = removalSlider.value.ToString();

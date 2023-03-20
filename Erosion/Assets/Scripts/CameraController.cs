@@ -6,6 +6,7 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     public float cameraSpeed;
+    public MeshRenderer terrain;
 
     void Update() //Called once per frame, moves camera right, left, forwards, or backwards when arrow key pressed and makes it look at the centre of the terrain
     {
@@ -24,6 +25,6 @@ public class CameraController : MonoBehaviour
         {
             transform.position += transform.right * Time.deltaTime * cameraSpeed;
         }
-        transform.LookAt(new Vector3(50, 0, 50));
+        transform.LookAt(terrain.bounds.center);
     }
 }

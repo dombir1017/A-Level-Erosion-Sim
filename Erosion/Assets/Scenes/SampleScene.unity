@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.17276844, g: 0.21589246, b: 0.2978263, a: 1}
+  m_IndirectSpecularColor: {r: 0.17276807, g: 0.21589197, b: 0.29782572, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -189,7 +189,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &40281477
 GameObject:
@@ -1675,7 +1675,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 538650073}
         m_TargetAssemblyTypeName: MenuManager, Assembly-CSharp
-        m_MethodName: UpdateErosionOptionText
+        m_MethodName: UpdateErosionValues
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2567,7 +2567,8 @@ MonoBehaviour:
   heightText: {fileID: 2124975956}
   scaleText: {fileID: 1381515565}
   offsetText: {fileID: 532274718}
-  errorText: {fileID: 2085493451}
+  invalidTerrainText: {fileID: 2085493451}
+  invalidIterationsText: {fileID: 1779851268}
   fileExists: {fileID: 1704746269}
   progress: {fileID: 1100465201}
   fileError: {fileID: 499586505}
@@ -2654,7 +2655,7 @@ RectTransform:
   - {fileID: 643265511}
   - {fileID: 387344733}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -4397,6 +4398,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraSpeed: 20
+  terrain: {fileID: 1175461353}
 --- !u!1 &974987372
 GameObject:
   m_ObjectHideFlags: 0
@@ -5306,7 +5308,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 558c1267a33f0394ba68a29f4f66d5b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  verts: []
   gr:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -5336,7 +5337,6 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
-  er: {fileID: 1175461354}
 --- !u!33 &1175461351
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -5358,7 +5358,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1175461353
 MeshRenderer:
@@ -5415,8 +5415,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   numIterationsRun: 0
-  mesh: {fileID: 0}
-  length: 0
+  tg: {fileID: 0}
 --- !u!1 &1176448119
 GameObject:
   m_ObjectHideFlags: 0
@@ -5956,7 +5955,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 538650073}
         m_TargetAssemblyTypeName: MenuManager, Assembly-CSharp
-        m_MethodName: UpdateErosionOptionText
+        m_MethodName: UpdateErosionValues
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7576,7 +7575,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 538650073}
         m_TargetAssemblyTypeName: MenuManager, Assembly-CSharp
-        m_MethodName: UpdateErosionOptionText
+        m_MethodName: UpdateErosionValues
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8775,7 +8774,7 @@ GameObject:
   - component: {fileID: 1779851269}
   - component: {fileID: 1779851268}
   m_Layer: 5
-  m_Name: ErrorText
+  m_Name: IterationErrorText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8798,7 +8797,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -5}
+  m_AnchoredPosition: {x: 0, y: -90}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1779851268
@@ -8821,7 +8820,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Invalid Input!!
+  m_text: 'Invalid number of
+
+    iterations!'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

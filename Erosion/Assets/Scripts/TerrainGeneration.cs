@@ -2,19 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
-using Random = UnityEngine.Random;
 
 public class TerrainGeneration : MonoBehaviour
 {
-    private const int length = 100, radius = 65, octaves = 5;
+    private const int octaves = 5;
     private const float persistance = 0.15f, lacunarity = 4f;
-                                                             
+    public readonly int length = 100;
+
+
     private float terrainHeight;
     private float scale;
     private int offset;
 
-    public Vector3[] verts;
+
+    public Dictionary<Vector3, float> vertHardness;
 
     public float[] values
     {
@@ -25,24 +26,20 @@ public class TerrainGeneration : MonoBehaviour
     public Gradient gr;
     private Mesh mesh;
 
-    public Erosion er;
-
     public void GenerateTerrain()//Generates terrain with current values
     {
+        vertHardness = new Dictionary<Vector3, float>();
         this.GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "terrain mesh";
-
-        verts = new Vector3[(length + 1) * (length + 1)];
 
         for (int i = 0, y = 0; y <= length; y++) //Constructs grid of vertices with heights offset based upon noise values
         {
             for (int x = 0; x <= length; x++, i++)
             {
-                float length = Noise(x, y);
-                verts[i] = new Vector3(x, length, y);
+                float length = GetHeight(x, y);
+                vertHardness.Add(new Vector3(x, length, y), getHardness(x, y));
             }
         }
-        mesh.vertices = verts;
 
         int[] tris = new int[length * length * 6];
         for (int i = 0, j = 0, y = 0; y < length; y++, j++) //Place indices of vertices into triangles array in correct order
@@ -55,24 +52,30 @@ public class TerrainGeneration : MonoBehaviour
                 tris[i + 5] = j + length + 2;
             }
         }
-        mesh.triangles = tris;
 
-        Color[] colours = new Color[verts.Length];
+        Color[] colours = new Color[vertHardness.Keys.Count];
         for (int i = 0, y = 0; y <= length; y++) //Colour each vertex of terrain depending upon its height
         {
             for (int x = 0; x <= length; x++, i++)
             {
-                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, verts[i].y);
+                float vertHeight = Mathf.InverseLerp(terrainHeight, 0, vertHardness.ElementAt(i).Key.y);
                 colours[i] = gr.Evaluate(vertHeight);
             }
         }
+        mesh.vertices = vertHardness.Keys.ToArray();
+        mesh.triangles = tris;
         mesh.colors = colours;
         mesh.RecalculateNormals();
-        er.mesh = mesh;
-        er.length = length;
+        mesh.RecalculateBounds();
     }
 
-    float Noise(int x, int y) //Uses perlin noise to generate height of each vertex
+    public void RedisplayMesh(Vector3[] v)//Sets mesh vertices
+    {
+        mesh.vertices = v;
+        mesh.RecalculateNormals();
+    }
+
+    float GetHeight(int x, int y) //Uses perlin noise to generate height of each vertex
     {
         float val = 0;
         float amplitude = 1;
@@ -88,6 +91,16 @@ public class TerrainGeneration : MonoBehaviour
             frequency *= lacunarity;  //Each octave's frequency multiplied by lacunarity
             amplitude *= persistance;//Each octave's amplitude multiplied by persistance
         }
+        return val;
+    }
+    
+    float getHardness(int x, int y) //Gets hardness value in range 0 to 1 for given vertex - higher vertices have higher hardness values
+    {
+        float val = 0;
+        float scaledX = (x + offset) / scale;
+        float scaledY = (y + offset) / scale;
+
+        val = Mathf.PerlinNoise(scaledX, scaledY);
         return val;
     }
 }
