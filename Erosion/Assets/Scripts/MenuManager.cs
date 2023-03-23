@@ -41,10 +41,18 @@ public class MenuManager : MonoBehaviour
         er.tg = tg;
         try
         {
-            progress.gameObject.SetActive(true);
-            invalidIterationsText.gameObject.SetActive(false);
-            er.values = new float[] { float.Parse(iterationField.text), removalSlider.value, maxSedimentSlider.value };
-            StartCoroutine(er.StartErosion());
+            if (Convert.ToInt32(iterationField.text) > 0)
+            {
+                progress.gameObject.SetActive(true);
+                invalidIterationsText.gameObject.SetActive(false);
+                er.values = new float[] { float.Parse(iterationField.text), removalSlider.value, maxSedimentSlider.value };
+                StartCoroutine(er.StartErosion());
+            }
+            else
+            {
+                progress.gameObject.SetActive(false);
+                invalidIterationsText.gameObject.SetActive(true);
+            }
         }
         catch
         {
@@ -94,7 +102,6 @@ public class MenuManager : MonoBehaviour
             if (float.TryParse(line1, out _) && float.TryParse(line2, out _) && float.TryParse(line3, out _))//Validate that file is of correct format
             {
                 fileError.gameObject.SetActive(false);
-                st.BaseStream.Position = 0;
                 values[0] = float.Parse(line1);
                 values[1] = float.Parse(line2);
                 values[2] = float.Parse(line3);

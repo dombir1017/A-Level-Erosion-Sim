@@ -6,7 +6,7 @@ using UnityEngine;
 public class TerrainGeneration : MonoBehaviour
 {
     private const int octaves = 5;
-    private const float persistance = 0.15f, lacunarity = 4f;
+    private const float persistence = 0.15f, lacunarity = 4f;
     public readonly int length = 100;
 
 
@@ -83,7 +83,7 @@ public class TerrainGeneration : MonoBehaviour
             float noiseValue = Mathf.PerlinNoise(scaledX, scaledY);
             val += noiseValue * amplitude * terrainHeight;
             frequency *= lacunarity;  //Each octave's frequency multiplied by lacunarity
-            amplitude *= persistance;//Each octave's amplitude multiplied by persistance
+            amplitude *= persistence;//Each octave's amplitude multiplied by persistence
         }
         return val;
     }

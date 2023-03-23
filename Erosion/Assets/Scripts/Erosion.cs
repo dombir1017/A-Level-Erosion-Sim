@@ -7,7 +7,7 @@ using System.Threading;
 
 public class Erosion : MonoBehaviour
 {
-    private const int dropletAttempts = 10000;
+    private const int droplets = 10000;
     private List<int> randomVerts;
     private int numIterations;
     private float removal, maxSediment;
@@ -21,12 +21,11 @@ public class Erosion : MonoBehaviour
     public int numIterationsRun;
     public TerrainGeneration tg;
     private int length;
-    private Dictionary<Vector3, float> vertHardness;
 
-    private List<int> HashVerts(int start, int end, int numberOfElements) //Creates list of random integers that are used as start points for each droplet
+    private List<int> RandomiseVerts(int start, int end, int numberOfElements) //Creates list of random integers that are used as start points for each droplet
     {
         var random = new System.Random();
-        HashSet<int> ints = new HashSet<int>();
+        HashSet<int> ints = new();
         while(ints.Count < numberOfElements)
         {
             ints.Add(random.Next(start, end));
@@ -36,6 +35,7 @@ public class Erosion : MonoBehaviour
 
     public IEnumerator StartErosion()
     {
+        Dictionary<Vector3, float> vertHardness;
         length = tg.length;
         numIterationsRun = 0;
         vertHardness = tg.vertHardness;
@@ -44,7 +44,7 @@ public class Erosion : MonoBehaviour
 
         for(int j = 0; j < numIterations; j++)
         {
-            randomVerts = HashVerts(0, vertHardness.Count, dropletAttempts); //Hash vertices to get droplet start points for iteration
+            randomVerts = RandomiseVerts(0, vertHardness.Count, droplets); //Hash vertices to get droplet start points for iteration
             Thread[] threads = new Thread[10];
 
             for (int i = 0; i < 10; i++)//Split each iteration between 10 threads
@@ -67,7 +67,7 @@ public class Erosion : MonoBehaviour
 
     private void ThreadStart(int startPoint, ref Vector3[] verts, ref float[] hardness)//Run for each thread - allocates start and end points for each thread to work on
     {
-        for (int i = startPoint * dropletAttempts/10; i < (startPoint+1) * dropletAttempts / 10; i++)
+        for (int i = startPoint * droplets/10; i < (startPoint+1) * droplets / 10; i++)
         {
             RunDroplet(randomVerts[i], ref verts, ref hardness);
         }
@@ -77,14 +77,14 @@ public class Erosion : MonoBehaviour
     {
         int vertX = vertIndex % (length + 1);
         int vertY = vertIndex / (length + 1);
-        if (vertX < length - 1 && vertX > 1 && vertY < length - 1 && vertY > 1)
+        if (vertX < length && vertX > 0 && vertY < length && vertY > 0)
         {
             float removedMaterial = removal / 10000f * (1-hardness[vertIndex]); //Removes material based upon terrain hardness at point
             float newSediment = Math.Clamp(removedMaterial + sediment, 0, maxSediment);
             float depositedMaterial = 0;
-            if (newSediment == sediment)
+            if (newSediment == maxSediment)
             {
-                depositedMaterial = removedMaterial;
+                depositedMaterial = removedMaterial + sediment - newSediment;
             }
 
             verts[vertIndex].y -= removedMaterial - depositedMaterial;
